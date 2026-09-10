@@ -35,9 +35,8 @@ coverage/
 
 ### Html ###
 # html specific files
-
-*.html
-*.htm
+#*.html
+#*.htm
 .DS_Store
 
 ### Node ###
