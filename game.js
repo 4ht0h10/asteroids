@@ -63,10 +63,49 @@ class Bullet {
   }
 }
 
+// ── PowerUp (Disparo Triple) ─────────────────────────────────────────────────
+class PowerUp {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.radius = 10;
+    this.pulse = 0;
+    this.dead = false;
+  }
+
+  update(dt) {
+    this.pulse += dt;
+  }
+
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    const scale = 1 + Math.sin(this.pulse * 4) * 0.15;
+    ctx.scale(scale, scale);
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    for (const a of [-0.35, 0, 0.35]) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * (this.radius - 3), Math.sin(a) * (this.radius - 3));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 // ── Asteroid ──────────────────────────────────────────────────────────────────
 const RADII  = [0, 16, 30, 50];   // por tamaño 1, 2, 3
 const SPEEDS = [0, 85, 55, 32];   // velocidad base por tamaño
 const POINTS = [0, 100, 50, 20];  // puntos por tamaño
+
+// ── Power-up: Disparo Triple ─────────────────────────────────────────────────
+const POWERUP_DROP_CHANCE  = 0.2;   // probabilidad al destruir un asteroide
+const TRIPLE_SHOT_DURATION = 6;     // segundos que dura el efecto
+const TRIPLE_SHOT_SPREAD   = 0.26;  // ~15° de separación entre balas laterales
 
 class Asteroid {
   constructor(x, y, size = 3) {
@@ -138,6 +177,7 @@ class Ship {
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
+    this.tripleShotTimer = 0;
     this.dead          = false;
   }
 
@@ -145,6 +185,7 @@ class Ship {
     if (this.dead) return;
     if (this.invincible    > 0) this.invincible    -= dt;
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
+    if (this.tripleShotTimer > 0) this.tripleShotTimer -= dt;
 
     const ROT   = 3.5;   // rad/s
     const THRUST = 260;  // px/s²
@@ -171,6 +212,13 @@ class Ship {
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+    if (this.tripleShotTimer > 0) {
+      return [
+        new Bullet(ox, oy, this.angle - TRIPLE_SHOT_SPREAD),
+        new Bullet(ox, oy, this.angle),
+        new Bullet(ox, oy, this.angle + TRIPLE_SHOT_SPREAD),
+      ];
+    }
     return [new Bullet(ox, oy, this.angle)];
   }
 
@@ -246,6 +294,8 @@ let ship, bullets, asteroids, particles;
 let score, lives, level;
 let state;      // 'playing' | 'dead' | 'gameover'
 let deadTimer;
+let powerUp;          // recogible de Disparo Triple activo en pantalla, o null
+let powerUpAvailable; // true hasta que se genera el único power-up de la partida
 
 function spawnAsteroids(count) {
   const SAFE_DIST = 130;
@@ -268,6 +318,8 @@ function initGame() {
   lives  = 3;
   level  = 1;
   state  = 'playing';
+  powerUp          = null;
+  powerUpAvailable = true;
   spawnAsteroids(4);
 }
 
@@ -322,6 +374,7 @@ function update(dt) {
   bullets.forEach(b => b.update(dt));
   asteroids.forEach(a => a.update(dt));
   particles.forEach(p => p.update(dt));
+  if (powerUp) powerUp.update(dt);
 
   bullets   = bullets.filter(b => !b.dead);
   particles = particles.filter(p => !p.dead);
@@ -336,6 +389,10 @@ function update(dt) {
         score += POINTS[a.size];
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
+        if (powerUpAvailable && !powerUp && Math.random() < POWERUP_DROP_CHANCE) {
+          powerUp = new PowerUp(a.x, a.y);
+          powerUpAvailable = false;
+        }
       }
     }
   }
@@ -350,6 +407,12 @@ function update(dt) {
         break;
       }
     }
+  }
+
+  // Nave vs power-up
+  if (powerUp && dist(ship, powerUp) < ship.radius + powerUp.radius) {
+    ship.tripleShotTimer = TRIPLE_SHOT_DURATION;
+    powerUp = null;
   }
 
   // Nivel completado
@@ -387,6 +450,14 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
+  if (ship.tripleShotTimer > 0) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#0ff';
+    ctx.font = '13px monospace';
+    ctx.fillText(`DISPARO TRIPLE ${ship.tripleShotTimer.toFixed(1)}s`, 14, 46);
+    ctx.font = '15px monospace';
+    ctx.fillStyle = '#fff';
+  }
 }
 
 function drawOverlay(title, sub) {
@@ -406,6 +477,7 @@ function draw() {
   particles.forEach(p => p.draw());
   asteroids.forEach(a => a.draw());
   bullets.forEach(b => b.draw());
+  if (powerUp) powerUp.draw();
   ship.draw();
 
   drawHUD();
