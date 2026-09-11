@@ -42,6 +42,16 @@ Luego visita `http://localhost:3000`.
 | Mediano   | 50     |
 | Pequeño   | 100    |
 
+## Power-Ups
+
+| Power-up      | Efecto                                                                 |
+| ------------- | ----------------------------------------------------------------------|
+| Disparo Triple | Cada disparo lanza 3 balas en abanico en vez de 1. Dura 6 segundos. |
+
+- Aparece de forma aleatoria al destruir un asteroide.
+- Solo puede aparecer una vez por partida.
+- Se recoge volando la nave sobre el icono cian que deja el asteroide destruido.
+
 ## Características
 
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
