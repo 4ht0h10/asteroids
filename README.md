@@ -18,7 +18,11 @@ Nave espacial en un campo de asteroides con envolvimiento de bordes (el espacio 
 
 ## Cómo correr
 
-Abre `index.html` directamente en el navegador (doble clic), o usa un servidor local:
+Abre `index.html` directamente en el navegador (doble clic).
+
+Como no tiene dependencias no necesitas un servidor web.
+
+O también puedes usar un servidor local. Por ejemplo el de NODE:
 
 ```bash
 npx serve .
@@ -28,11 +32,12 @@ Luego visita `http://localhost:3000`.
 
 ## Controles
 
-| Tecla     | Acción     |
-| --------- | ---------- |
-| `←` `→`   | Rotar nave |
-| `↑`       | Propulsar  |
-| `Espacio` | Disparar   |
+| Tecla     | Acción           |
+| --------- | ---------------- |
+| `←` `→`   | Rotar nave       |
+| `↑`       | Propulsar        |
+| `Espacio` | Disparar         |
+| `E`       | Activar escudo   |
 
 ## Puntuación
 
@@ -42,18 +47,25 @@ Luego visita `http://localhost:3000`.
 | Mediano   | 50     |
 | Pequeño   | 100    |
 
-## Power-Ups
-
-| Power-up      | Efecto                                                                 |
-| ------------- | ----------------------------------------------------------------------|
-| Disparo Triple | Cada disparo lanza 3 balas en abanico en vez de 1. Dura 6 segundos. |
-
-- Aparece de forma aleatoria al destruir un asteroide.
-- Solo puede aparecer una vez por partida.
-- Se recoge volando la nave sobre el icono cian que deja el asteroide destruido.
-
 ## Características
 
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
+
+## Power-Ups
+
+| Power-up       | Efecto                                                                    |
+| -------------- | -------------------------------------------------------------------------|
+| Disparo Triple | Cada disparo lanza 3 balas en abanico en vez de 1. Dura 6 segundos.       |
+| Escudo         | Burbuja verde que hace a la nave inmune a los asteroides. Dura 6 segundos.|
+
+**Disparo Triple**
+- Aparece de forma aleatoria al destruir un asteroide.
+- Solo puede aparecer una vez por partida.
+- Se recoge volando la nave sobre el icono cian que deja el asteroide destruido.
+
+**Escudo**
+- No se recoge de ningún asteroide: está disponible desde el inicio de cada vida de la nave.
+- Se activa pulsando `E`. Dura exactamente 6 segundos y los impactos durante ese tiempo no lo desactivan ni afectan a la nave.
+- Un solo uso por vida: una vez activado no se puede volver a usar hasta que la nave muera y reaparezca una nueva.

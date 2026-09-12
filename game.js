@@ -107,6 +107,9 @@ const POWERUP_DROP_CHANCE  = 0.2;   // probabilidad al destruir un asteroide
 const TRIPLE_SHOT_DURATION = 6;     // segundos que dura el efecto
 const TRIPLE_SHOT_SPREAD   = 0.26;  // ~15° de separación entre balas laterales
 
+// ── Power-up: Escudo ──────────────────────────────────────────────────────────
+const SHIELD_DURATION = 6; // duración fija del escudo, en segundos
+
 class Asteroid {
   constructor(x, y, size = 3) {
     this.x    = x;
@@ -165,7 +168,10 @@ class Asteroid {
 
 // ── Ship ──────────────────────────────────────────────────────────────────────
 class Ship {
-  constructor() { this.reset(); }
+  constructor() {
+    this.shieldUsed = false;
+    this.reset();
+  }
 
   reset() {
     this.x      = W / 2;
@@ -178,6 +184,7 @@ class Ship {
     this.invincible    = 3;
     this.shootCooldown = 0;
     this.tripleShotTimer = 0;
+    this.shieldTimer     = 0;
     this.dead          = false;
   }
 
@@ -186,6 +193,7 @@ class Ship {
     if (this.invincible    > 0) this.invincible    -= dt;
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     if (this.tripleShotTimer > 0) this.tripleShotTimer -= dt;
+    if (this.shieldTimer > 0) this.shieldTimer -= dt;
 
     const ROT   = 3.5;   // rad/s
     const THRUST = 260;  // px/s²
@@ -250,6 +258,16 @@ class Ship {
       ctx.lineTo(-8 - rand(6, 14), 0);
       ctx.lineTo(-8,  4);
       ctx.strokeStyle = 'rgba(255, 130, 0, 0.85)';
+      ctx.stroke();
+    }
+
+    // Burbuja del escudo
+    if (this.shieldTimer > 0) {
+      const pulse = 1 + Math.sin(this.shieldTimer * 8) * 0.08;
+      ctx.beginPath();
+      ctx.arc(0, 0, (this.radius + 8) * pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth   = 2;
       ctx.stroke();
     }
 
@@ -361,13 +379,19 @@ function update(dt) {
     particles.forEach(p => p.update(dt));
     particles = particles.filter(p => !p.dead);
     asteroids.forEach(a => a.update(dt));
-    if (deadTimer <= 0) { state = 'playing'; ship.reset(); }
+    if (deadTimer <= 0) { state = 'playing'; ship.reset(); ship.shieldUsed = false; }
     return;
   }
 
   // Disparar
   if (pressed('Space')) {
     bullets.push(...ship.tryShoot());
+  }
+
+  // Activar escudo
+  if (pressed('KeyE') && ship.shieldTimer <= 0 && !ship.shieldUsed) {
+    ship.shieldTimer = SHIELD_DURATION;
+    ship.shieldUsed  = true;
   }
 
   ship.update(dt);
@@ -400,7 +424,7 @@ function update(dt) {
   bullets   = bullets.filter(b => !b.dead);
 
   // Nave vs asteroide
-  if (ship.invincible <= 0) {
+  if (ship.invincible <= 0 && ship.shieldTimer <= 0) {
     for (const a of asteroids) {
       if (dist(ship, a) < ship.radius + a.radius * 0.82) {
         killShip();
@@ -450,14 +474,23 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
+  let buffY = 46;
   if (ship.tripleShotTimer > 0) {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#0ff';
     ctx.font = '13px monospace';
-    ctx.fillText(`DISPARO TRIPLE ${ship.tripleShotTimer.toFixed(1)}s`, 14, 46);
-    ctx.font = '15px monospace';
-    ctx.fillStyle = '#fff';
+    ctx.fillText(`DISPARO TRIPLE ${ship.tripleShotTimer.toFixed(1)}s`, 14, buffY);
+    buffY += 18;
   }
+  if (ship.shieldTimer > 0) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#0f0';
+    ctx.font = '13px monospace';
+    ctx.fillText(`ESCUDO ${ship.shieldTimer.toFixed(1)}s`, 14, buffY);
+    buffY += 18;
+  }
+  ctx.font = '15px monospace';
+  ctx.fillStyle = '#fff';
 }
 
 function drawOverlay(title, sub) {
